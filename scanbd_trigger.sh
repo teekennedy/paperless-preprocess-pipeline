@@ -28,31 +28,24 @@ SCAN_FORMAT="pnm"
 # Scan resolution in DPI
 SCAN_RESOLUTION=300
 
-# Base format string for files generated in this batch
-BASE_FILE_FORMAT_STR="scan_${SCAN_MODE}_%03d"
-
 # File format string for batch scans
-SCAN_BATCH_FILE_FORMAT_STR="${BASE_FILE_FORMAT_STR}.${SCAN_FORMAT}"
+SCAN_BATCH_FILE_FORMAT_STR="scan_${SCAN_MODE}_%03d.${SCAN_FORMAT}"
 
 # File format to save preprocessed files as. Can be any format supported by
 # numpy that can be passed to unpaper
 PREPROCESS_FORMAT="pbm"
 
-# Unpaper input files format string
-UNPAPER_INPUT_FILE_FORMAT_STR="${BASE_FILE_FORMAT_STR}.${PREPROCESS_FORMAT}"
-
-# Unpaper output file format. Unpaper doesn't convert formats so the output
-# format is the same as the input format.
+# Unpaper output file format. Unpaper shouldn't do any format conversion so
+# it's set to be the same as the input format.
 UNPAPER_FORMAT=$PREPROCESS_FORMAT
-
-# Unpaper output files format string
-UNPAPER_OUTPUT_FILE_FORMAT_STR="${BASE_FILE_FORMAT_STR}.${UNPAPER_FORMAT}"
 
 # Tiff format is of course tif
 TIFF_FORMAT="tif"
 
 # Create a temporary working directory
 WORK_DIR="$(mktemp -d)"
+# Allow the group assigned by scanbd to read this file for debugging
+chmod g+rx $WORK_DIR
 
 # Create subdirectories
 SCAN_DIR=$WORK_DIR/raw
@@ -86,7 +79,11 @@ for raw_scan in $SCAN_DIR/*.$SCAN_FORMAT; do
 done
 
 # Use unpaper to further process scans
-unpaper -vv $PREPROCESS_DIR/$UNPAPER_INPUT_FILE_FORMAT_STR $UNPAPER_DIR/$UNPAPER_OUTPUT_FILE_FORMAT_STR
+for preprocessed_scan in $PREPROCESS_DIR/*.$PREPROCESS_FORMAT; do
+  # Use the same filename for input and output, changing the directory and file extension
+  # Turn off grayfilter as we're using black and white scans
+  unpaper -v --no-grayfilter --no-blackfilter --no-deskew --type $UNPAPER_FORMAT $preprocessed_scan $UNPAPER_DIR/$(basename $raw_scan .$SCAN_FORMAT).$UNPAPER_FORMAT
+done
 
 # Convert to tiff to be able to create a multi-page document
 for unpapered_scan in $UNPAPER_DIR/*.$UNPAPER_FORMAT; do
@@ -95,5 +92,7 @@ for unpapered_scan in $UNPAPER_DIR/*.$UNPAPER_FORMAT; do
 done
 
 # Combine pages into single document for paperless to consume
-# Use lzma2 compression at level 5, midway between fastest (1) and smallest (9)
-tiffcp -c lzma:p5 $TIFF_DIR/*.$TIFF_FORMAT "$PAPERLESS_CONSUME_DIR/$OUTPUT_BASENAME.$TIFF_FORMAT"
+# Use lzma2 compression at highest level (9)
+tiffcp -c lzma:p9 $TIFF_DIR/*.$TIFF_FORMAT "$PAPERLESS_CONSUME_DIR/$OUTPUT_BASENAME.$TIFF_FORMAT"
+
+echo "Done!"
