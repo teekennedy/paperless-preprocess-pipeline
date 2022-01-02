@@ -1,4 +1,9 @@
-webserver.env
+# Virtualenv used by preprocess script
+_venv/
+
+# paperless-ng configuration and runtime files/folders
+.env
+docker-compose.env
+docker-compose.yml
 consume/
 export/
-_venv/

@@ -1,12 +1,16 @@
-# One-touch solution for paperless-ng
+# Paperless preprocess pipeline
 
-This repo integrates your scanner with paperless-ng to provide an all-in-one
-solution for going paperless. Push button, get clean, searchable PDF.
+Preprocessing pipeline for importing scanned documents into paperless-ng using
+opencv and unpaper.
+
+## Features
+
+
 
 ## Motivation
 
 The [paperless-ng] project is a great tool for digitizing and organizing paper
-documents. It has great document post-processing features including
+documents. It has excellent document post-processing features including
 machine-learning powered tagging, document metadata autofill, search indexing,
 and automatic OCR. It presents all your documents in an intuitive, modern UI.
 
@@ -41,76 +45,49 @@ group so you can access the device:
 
 Log out and back in for the group change to take effect. Better yet, reboot.
 
-Connect and turn on your scanner if you haven't already, and check that it's is
+Connect and turn on your scanner if you haven't already, and check that it's
 detected by running `scanimage -L`. You should see output similar to
 ``device `epjitsu:libusb:002:014' is a FUJITSU ScanSnap S1300i scanner``.
 If you don't, make sure scanner is awake and ready to scan,
 and try some of the troubleshooting methods described in the [sane
-Troubleshooting guide].
+Troubleshooting guide]. You can also set environment variables to enable
+various levels of debug output, e.g. `SANE_DEBUG_DLL=5 SANE_DEBUG_SANEI_USB=4
+scanimage -L`. See the manpages for `sane-dll`, `sane-usb`, and your specific
+sane backend for more info on debug levels.
 
-If successful, find out what scan options are available for your scanner device
-by running `scanimage --help`. Run a test scan with your desired options and
-check that the output image is as expected.
+Once successful, find out what scan options are available for your scanner
+device by running `scanimage --help`. Run a test scan with your desired options
+and check that the output image is as expected.
+
 
 ### Paperless-ng setup
 
-We'll be using the docker-compose method of running paperless-ng. Start by
-installing docker and docker-compose:
+Run through [paperless-ng's setup guide] to install and start paperless-ng. I
+recommend using the docker-compose method. You can configure and run
+paperless-ng directly from a clone of this repo if you want - the config files
+and runtime directories will be ignored by git.
+
+For configuration, the only recommended setting to use this pipeline is
+`PAPERLESS_OCR_CLEAN=none`. This disables paperless-ng's use of `unpaper`,
+which is desirable since the tool is already used in this pipeline.
+
+As a convenience, you can bootstrap paperless-ng's config using this script:
 
 ```bash
-# Add Docker repository to apt
-
-# apt-key is deprecated as of 22.04. Add key using gpg directly
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-    sudo gpg --dearmor -o /usr/share/keyrings/docker-keyring.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-
-# Install docker and docker-compose to run paperless-ng
-sudo apt install docker-ce docker-compose
-```
-
-Next, make sure you're logged in as the user you want paperless-ng to save
-files as, and clone this repo into the directory that you want to run
-paperless-ng out of:
-
-```bash
-git clone https://github.com/teekennedy/one-touch-paperless-ng.git paperless-ng
-cd paperless-ng
-```
-
-Configure paperless-ng by substituting variables in [/webserver.env.template]
-with values from the current environment. The resulting webserver.env will
-contain sensitive information and is ignored by git.
-
-```bash
+# set paperless secret key to a random string
 export PAPERLESS_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
+# set uid and gid to match current user
 export USERMAP_UID=$(id -u)
 export USERMAP_GID=$(id -g)
+# set timezone to match host timezone
 export PAPERLESS_TIME_ZONE=$(timedatectl show --property=Timezone --value)
-envsubst '$PAPERLESS_SECRET_KEY:$USERMAP_UID:$USERMAP_GID:$PAPERLESS_TIME_ZONE' < ./webserver.env.template > webserver.env
+envsubst '$PAPERLESS_SECRET_KEY:$USERMAP_UID:$USERMAP_GID:$PAPERLESS_TIME_ZONE' < ./docker-compose.env.template > docker-compose.env
 ```
 
 You may want to take this opportunity to review [paperless-ng's configuration]
 for other environment variables you may want to set.
 
-Finally, start the services and create the initial superuser for the web UI:
-
-```bash
-docker-compose pull
-docker-compose up -d
-docker-compose run --rm webserver createsuperuser
-```
-
-You'll be prompted for a username, email address, and password. With that all
-set you should be able to go to http://localhost:8000 and login!
-
-The docker services are set to restart until stopped, so paperless-ng will
-continue to run across reboots.
-
-### One-touch paperless (scanbd) setup
+### Push-button paperless integration with scanbd
 
 Scanbd is the scanner button daemon. It polls the scanner for button presses
 and triggers a user-defined script. We'll use this to integrate our scanner
@@ -120,14 +97,15 @@ with paperless-ng.
 sudo apt install scanbd unpaper python3 python3-venv libtiff-tools
 ```
 
-Update `/etc/scanbd/scanbd.conf`. Most settings will be left the same, but
+Edit `/etc/scanbd/scanbd.conf`. Most settings will be left the same, but
 there are a few that are worth changing:
 
 - Comment out the `saned_env { ... }` line. It tells saned to use a different
-  folder for configuration and that's unnecessary.
+  folder for its configuration which is unnecessary and confusing.
 - The script pointed to under the `action scan {` section should be changed
   from `test.script` to this repo's `scanbd_trigger.sh`.
-- Comment out or remove all `include` directives. They load files
+- Comment out or remove all `include` directives that load specific backends.
+  These can be found at the bottom of the file.
 
 Setup the scanbd target script:
 
@@ -148,5 +126,6 @@ sudo systemctl restart scanbd
 
 [paperless-ng]: https://paperless-ng.readthedocs.io/en/latest/index.html
 [paperless-ng's configuration]: https://paperless-ng.readthedocs.io/en/latest/configuration.html
+[paperless-ng's setup guide]: https://paperless-ng.readthedocs.io/en/latest/setup.html
 [SANE backends]: http://www.sane-project.org/sane-backends.html
 [sane Troubleshooting guide]: https://help.ubuntu.com/community/sane_Troubleshooting
