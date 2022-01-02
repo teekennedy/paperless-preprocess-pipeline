@@ -1,11 +1,23 @@
 # Paperless preprocess pipeline
 
-Preprocessing pipeline for importing scanned documents into paperless-ng using
-opencv and unpaper.
+Preprocessing pipeline for cleaning, enhancing, and compressing scanned
+documents before they're imported into paperless-ng. Uses opencv and [unpaper].
 
 ## Features
 
-
+- Smoothes and de-noises raw scans using the edge-preserving [Bilateral
+  filtering algorithm].
+- Automatically crops and rotates the document within the scanned image.
+- Automatically detects and removes blank pages. Very useful for scanners that
+  scan both sides of a document.
+- Thresholds the image to black and white using [Otsu's algorithm] to improve
+  OCR accuracy and reduce storage requirements.
+- Does all of the above _before_ sending the image to [unpaper] for further
+  noise and artifact reduction!
+- Supports batch processing of documents for scanners that have an automatic
+  document feed. Merges cleaned images into a single compressed file.
+- Able to process raw scanned image in many formats, including pnm, ppm, pbm,
+  and tiff.
 
 ## Motivation
 
@@ -16,7 +28,8 @@ and automatic OCR. It presents all your documents in an intuitive, modern UI.
 
 While paperless-ng's post-processing tools are top-notch, in the case of
 scanned documents it relies entirely on the user to provide quality,
-pre-processed images for it to consume. This repo aims to fill that gap.
+pre-processed images for it to consume. Every feature listed above fills a gap
+in paperless-ng's functionality.
 
 ## Setup
 
@@ -68,8 +81,8 @@ paperless-ng directly from a clone of this repo if you want - the config files
 and runtime directories will be ignored by git.
 
 For configuration, the only recommended setting to use this pipeline is
-`PAPERLESS_OCR_CLEAN=none`. This disables paperless-ng's use of `unpaper`,
-which is desirable since the tool is already used in this pipeline.
+`PAPERLESS_OCR_CLEAN=none`. This disables paperless-ng's use of [unpaper],
+which is desirable since it's already used by the preprocessing pipeline.
 
 As a convenience, you can bootstrap paperless-ng's config using this script:
 
@@ -123,9 +136,15 @@ sudo systemctl restart scanbd
 - Better secrets management for `PAPERLESS_SECRETS_KEY` (as described in
   [jonaswinkler/paperless-ng#1236]). For now I'm just saving the key to a
   git-ignored file.
+- Detect and clean up dark edges and corners in scanned document. Ideally this
+  would be done by applying adaptive thresholding to those regions to preserve
+  content.
 
+[Bilateral filtering algorithm]: https://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/MANDUCHI1/Bilateral_Filtering.html
+[Otsu's algorithm]: https://docs.opencv.org/4.5.5/d7/d4d/tutorial_py_thresholding.html
 [paperless-ng]: https://paperless-ng.readthedocs.io/en/latest/index.html
 [paperless-ng's configuration]: https://paperless-ng.readthedocs.io/en/latest/configuration.html
 [paperless-ng's setup guide]: https://paperless-ng.readthedocs.io/en/latest/setup.html
 [SANE backends]: http://www.sane-project.org/sane-backends.html
 [sane Troubleshooting guide]: https://help.ubuntu.com/community/sane_Troubleshooting
+[unpaper]: https://github.com/unpaper/unpaper
