@@ -87,11 +87,11 @@ with values from the current environment. The resulting webserver.env will
 contain sensitive information and is ignored by git.
 
 ```bash
-export PAPERLESS_SECRETS_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
+export PAPERLESS_SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)
 export USERMAP_UID=$(id -u)
 export USERMAP_GID=$(id -g)
 export PAPERLESS_TIME_ZONE=$(timedatectl show --property=Timezone --value)
-envsubst '$PAPERLESS_SECRETS_KEY:$USERMAP_UID:$USERMAP_GID:$PAPERLESS_TIME_ZONE' < ./webserver.env.template > webserver.env
+envsubst '$PAPERLESS_SECRET_KEY:$USERMAP_UID:$USERMAP_GID:$PAPERLESS_TIME_ZONE' < ./webserver.env.template > webserver.env
 ```
 
 You may want to take this opportunity to review [paperless-ng's configuration]
