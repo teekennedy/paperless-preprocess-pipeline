@@ -27,7 +27,6 @@ Setup your scanner using the SANE (scanner access not easy) software:
 sudo add-apt-repository universe
 
 # Install SANE (scanner access now easy) tools
-# TODO scanbd?
 sudo apt install libsane sane-utils
 ```
 
@@ -118,7 +117,7 @@ and triggers a user-defined script. We'll use this to integrate our scanner
 with paperless-ng.
 
 ```bash
-sudo apt install scanbd unpaper python3 python3-venv
+sudo apt install scanbd unpaper python3 python3-venv libtiff-tools
 ```
 
 Update `/etc/scanbd/scanbd.conf`. Most settings will be left the same, but
@@ -126,7 +125,9 @@ there are a few that are worth changing:
 
 - Comment out the `saned_env { ... }` line. It tells saned to use a different
   folder for configuration and that's unnecessary.
--j
+- The script pointed to under the `action scan {` section should be changed
+  from `test.script` to this repo's `scanbd_trigger.sh`.
+- Comment out or remove all `include` directives. They load files
 
 Setup the scanbd target script:
 
@@ -136,6 +137,7 @@ python3 -m venv _venv
 pip install -r requirements.txt
 sudo mkdir -p /etc/scanbd/scripts
 sudo ln -s $(pwd)/scanbd_trigger.sh /etc/scanbd/scripts/scanbd_trigger.sh
+sudo systemctl restart scanbd
 ```
 
 ## TODO

@@ -9,10 +9,16 @@ import sys
 # considered contentful (non-blank)
 CONTENTFUL_PAGE_THRESHOLD = 1e-4
 
-if len(sys.argv) != 3:
-    print(f"Usage {sys.argv[0]} input_path output_path")
-    sys.exit(1)
 
+def enhance_raw_scan(img):
+    """
+    Enhances the given raw scanned image by applying edge-preserving smoothing
+    to reduce noise and then applies the otsu thresholding algorithm to
+    increase contrast.
+    """
+    smooth = cv.bilateralFilter(img, -1, 10, 10)
+    _, img_out = cv.threshold(smooth, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    return img_out
 
 def is_blank_page(img, threshold=CONTENTFUL_PAGE_THRESHOLD) -> bool:
     """
@@ -34,19 +40,25 @@ def is_blank_page(img, threshold=CONTENTFUL_PAGE_THRESHOLD) -> bool:
     # Compute percentage of image that has content
     percent_content = sum(math.pi * kp.size for kp in keypoints) / img.size
     print(f"Page is at least {percent_content * 100:0.4f}% content")
-    return percent_content > threshold
+    return percent_content < threshold
 
 
-in_path = sys.argv[1]
-out_path = sys.argv[2]
+def main():
+    if len(sys.argv) != 3:
+        print(f"Usage {sys.argv[0]} input_path output_path")
+        sys.exit(1)
 
-img_in = cv.imread(sys.argv[1], 0)
+    in_path = sys.argv[1]
+    out_path = sys.argv[2]
 
-smooth = cv.bilateralFilter(img_in, -1, 10, 10)
-_, img_out = cv.threshold(smooth, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+    img_in = cv.imread(in_path, 0)
+    img_out = enhance_raw_scan(img_in)
 
-if is_blank_page(img_out):
-    print("Page is blank, not outputting anything")
-else:
-    print(f"Page has content, writing to {out_path}")
-    cv.imwrite(out_path, img_out)
+    if is_blank_page(img_out):
+        print("Page is blank, not outputting anything")
+    else:
+        print(f"Page has content, writing to {out_path}")
+        cv.imwrite(out_path, img_out)
+
+if __name__ == "__main__":
+    main()
