@@ -35,10 +35,10 @@ Find which backend supports your scanner by going to the [SANE backends] page
 and searching for your model of scanner. Be sure to click on the link to the
 backend-specific manpage to see if there's any further setup necessary.
 
-If you're using a physically connected scanner, add yourself to the `saned`
+If you're using a physically connected scanner, add yourself to the `scanner`
 group so you can access the device:
 
-`sudo usermod -aG saned $USER`
+`sudo usermod -aG scanner $USER`
 
 Log out and back in for the group change to take effect. Better yet, reboot.
 
@@ -110,6 +110,33 @@ set you should be able to go to http://localhost:8000 and login!
 
 The docker services are set to restart until stopped, so paperless-ng will
 continue to run across reboots.
+
+### One-touch paperless (scanbd) setup
+
+Scanbd is the scanner button daemon. It polls the scanner for button presses
+and triggers a user-defined script. We'll use this to integrate our scanner
+with paperless-ng.
+
+```bash
+sudo apt install scanbd unpaper python3 python3-venv
+```
+
+Update `/etc/scanbd/scanbd.conf`. Most settings will be left the same, but
+there are a few that are worth changing:
+
+- Comment out the `saned_env { ... }` line. It tells saned to use a different
+  folder for configuration and that's unnecessary.
+-j
+
+Setup the scanbd target script:
+
+```
+python3 -m venv _venv
+. _venv/bin/activate
+pip install -r requirements.txt
+sudo mkdir -p /etc/scanbd/scripts
+sudo ln -s $(pwd)/scanbd_trigger.sh /etc/scanbd/scripts/scanbd_trigger.sh
+```
 
 ## TODO
 
