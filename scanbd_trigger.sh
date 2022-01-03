@@ -82,7 +82,7 @@ done
 for preprocessed_scan in $PREPROCESS_DIR/*.$PREPROCESS_FORMAT; do
   # Use the same filename for input and output, changing the directory and file extension
   # Turn off grayfilter as we're using black and white scans
-  unpaper -v --no-grayfilter --no-blackfilter --no-deskew --type $UNPAPER_FORMAT $preprocessed_scan $UNPAPER_DIR/$(basename $raw_scan .$SCAN_FORMAT).$UNPAPER_FORMAT
+  unpaper -v --no-grayfilter --no-blackfilter --no-deskew --type $UNPAPER_FORMAT $preprocessed_scan $UNPAPER_DIR/$(basename $preprocessed_scan .$PREPROCESS_FORMAT).$UNPAPER_FORMAT
 done
 
 # Convert to tiff to be able to create a multi-page document
