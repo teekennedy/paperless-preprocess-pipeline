@@ -141,6 +141,7 @@ sudo systemctl restart scanbd
   content.
 
 [Bilateral filtering algorithm]: https://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/MANDUCHI1/Bilateral_Filtering.html
+[jonaswinkler/paperless-ng#1236]: https://github.com/jonaswinkler/paperless-ng/issues/1236
 [Otsu's algorithm]: https://docs.opencv.org/4.5.5/d7/d4d/tutorial_py_thresholding.html
 [paperless-ng]: https://paperless-ng.readthedocs.io/en/latest/index.html
 [paperless-ng's configuration]: https://paperless-ng.readthedocs.io/en/latest/configuration.html
