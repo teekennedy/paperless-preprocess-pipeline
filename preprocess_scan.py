@@ -116,8 +116,7 @@ def main():
     img_in = cv.imread(in_path, 0)
 
     img_smooth = smoothen_raw_scan(img_in)
-    img_cropped = crop_document(img_smooth)
-    img_out = apply_threshold(img_cropped)
+    img_out = apply_threshold(img_in)
 
     debug_mode = os.environ.get("DEBUG_MODE")
     if debug_mode == "show":
